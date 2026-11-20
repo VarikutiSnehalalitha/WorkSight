@@ -1,4 +1,4 @@
-﻿# WorkSight Local Development Launcher
+# WorkSight Local Development Launcher
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   WorkSight — AI Workplace Intelligence & Attendance    " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan
