@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: worksight-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-worksight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-worksight_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-worksight}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-worksight} -d ${POSTGRES_DB:-worksight}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        INSTALL_AI_DEPS: ${INSTALL_AI_DEPS:-false}
+    container_name: worksight-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-worksight}:${POSTGRES_PASSWORD:-worksight_secure_pass}@postgres:5432/${POSTGRES_DB:-worksight}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production-64-char-secret}
+      CAMERA_ENCRYPTION_KEY: ${CAMERA_ENCRYPTION_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DEFAULT_VIDEO_RETENTION_DAYS: ${DEFAULT_VIDEO_RETENTION_DAYS:-7}
+      DEFAULT_EVENT_RETENTION_DAYS: ${DEFAULT_EVENT_RETENTION_DAYS:-90}
+      ALLOW_SIMULATED_FEEDS: ${ALLOW_SIMULATED_FEEDS:-true}
+      AI_VISION_ENABLED: ${AI_VISION_ENABLED:-true}
+      AI_MODEL_PATH: ${AI_MODEL_PATH:-yolov8n.pt}
+    ports:
+      - "8000:8000"
+    volumes:
+      - worksight_recordings:/app/recordings
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+    container_name: worksight-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  worksight_recordings:
