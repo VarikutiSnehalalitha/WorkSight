@@ -1,4 +1,4 @@
-# WorkSight Local Development Launcher
+﻿# WorkSight Local Development Launcher
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   WorkSight — AI Workplace Intelligence & Attendance    " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -8,8 +8,8 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # 1. Start Backend FastAPI Server
 Write-Host "`n[1/2] Starting FastAPI Backend on http://localhost:8000..." -ForegroundColor Yellow
 $backendJob = Start-Process -FilePath "$scriptDir\backend\.venv\Scripts\python.exe" `
-    -ArgumentList "-m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload" `
-    -WorkingDirectory "$scriptDir\backend" `
+    -ArgumentList "-m uvicorn app.main:app --app-dir `"$scriptDir\backend`" --host 0.0.0.0 --port 8000 --reload" `
+    -WorkingDirectory "$scriptDir" `
     -PassThru
 
 Start-Sleep -Seconds 3
@@ -17,8 +17,8 @@ Start-Sleep -Seconds 3
 # 2. Start Frontend Next.js Server
 Write-Host "`n[2/2] Starting Next.js Frontend on http://localhost:3000..." -ForegroundColor Yellow
 $frontendJob = Start-Process -FilePath "npm" `
-    -ArgumentList "run dev -- --port 3000" `
-    -WorkingDirectory "$scriptDir\frontend" `
+    -ArgumentList "--prefix `"$scriptDir\frontend`" run dev -- --port 3000" `
+    -WorkingDirectory "$scriptDir" `
     -PassThru
 
 Write-Host "`n==========================================================" -ForegroundColor Cyan

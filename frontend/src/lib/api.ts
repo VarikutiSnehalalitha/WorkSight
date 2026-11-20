@@ -1,8 +1,15 @@
+// If NEXT_PUBLIC_API_URL is set, use it; otherwise use empty string so all /api/* calls
+// hit Next.js rewrites proxying directly to backend http://127.0.0.1:8000 with ZERO CORS restrictions.
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL !== undefined
+    ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")
+    : "";
 
 export const WS_BASE =
-  process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, "") || "ws://localhost:8000";
+  process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, "") ||
+  (typeof window !== "undefined"
+    ? `ws://${window.location.hostname}:8000`
+    : "ws://127.0.0.1:8000");
 
 export const TOKEN_STORAGE_KEY = "worksight_access_token";
 
@@ -44,7 +51,8 @@ export async function apiFetch<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const endpoint = API_BASE ? `${API_BASE}${path}` : path;
+  const res = await fetch(endpoint, {
     ...options,
     headers,
   });
@@ -70,7 +78,8 @@ export async function apiFetch<T>(
 
 export async function apiDownloadFile(path: string, filename: string): Promise<void> {
   const token = getStoredToken();
-  const res = await fetch(`${API_BASE}${path}`, {
+  const endpoint = API_BASE ? `${API_BASE}${path}` : path;
+  const res = await fetch(endpoint, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) {
@@ -88,5 +97,8 @@ export async function apiDownloadFile(path: string, filename: string): Promise<v
 }
 
 export function buildMediaUrl(relativePath: string): string {
-  return `${API_BASE}${relativePath}`;
+  if (API_BASE) {
+    return `${API_BASE}${relativePath}`;
+  }
+  return relativePath;
 }

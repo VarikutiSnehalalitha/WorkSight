@@ -75,12 +75,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Robust CORS Configuration: Allow all localhost and 127.0.0.1 ports (3000, 3001, etc.)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cfg.cors_origin_list,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ] + cfg.cors_origin_list,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Register modular API routers
